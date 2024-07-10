@@ -6,10 +6,10 @@ from django.utils.translation import gettext_lazy as _
 class Job(models.Model):
     job_id = models.CharField(
         _('job id'),
-        max_length=4096,
+        max_length=4000,
         unique=True
     )
-    url = models.URLField(_('url'))
+    url = models.URLField(_('url'), max_length=4000)
     published_date = models.DateTimeField(_('published date'))
     skills = models.ManyToManyField(
         'skills.Skill',
