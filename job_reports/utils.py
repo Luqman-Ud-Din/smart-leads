@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta
 
+from drf_yasg import openapi
 from rest_framework import status
 from rest_framework.response import Response
 
@@ -28,7 +29,7 @@ def parse_dates(request):
     return start_date, end_date, None
 
 
-def get_jobs_count_by_hour(start_date, end_date):
+def get_jobs_published_by_search_terms_per_hour(start_date, end_date):
     data = []
 
     for hour in range(24):
@@ -51,7 +52,7 @@ def get_jobs_count_by_hour(start_date, end_date):
     return data
 
 
-def get_jobs_count_by_skill_per_hour(start_date, end_date):
+def get_jobs_published_by_skills_per_hour(start_date, end_date):
     data = []
 
     for hour in range(24):
@@ -90,3 +91,16 @@ def get_jobs_published_per_hour(start_date, end_date):
         current_date += timedelta(days=1)
 
     return data
+
+
+start_date_query_param = openapi.Parameter(
+    'start_date', openapi.IN_QUERY,
+    description="Start date (YYYY-MM-DD)",
+    type=openapi.TYPE_STRING
+)
+
+end_date_query_param = openapi.Parameter(
+    'end_date', openapi.IN_QUERY,
+    description="End date (YYYY-MM-DD)",
+    type=openapi.TYPE_STRING
+)

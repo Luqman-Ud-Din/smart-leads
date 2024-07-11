@@ -36,9 +36,11 @@ schema_view = get_schema_view(
     permission_classes=(permissions.AllowAny,),
 )
 
+API_V1_PREFIX = 'api/v1'
+
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('api/', include('jobs.urls')),
+    path(f'{API_V1_PREFIX}/job_reports/', include('job_reports.api.v1.urls')),
     path('swagger/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
     path('redoc/', schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc'),
     path('swagger.json', schema_view.without_ui(cache_timeout=0), name='schema-json'),
