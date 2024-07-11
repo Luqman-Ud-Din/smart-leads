@@ -6,8 +6,8 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from job_reports.serializers import HourlyJobCountSerializer
-from job_reports.utils import parse_dates, get_jobs_published_by_search_terms_per_hour, start_date_query_param, \
-    end_date_query_param
+from job_reports.utils import start_date_query_param, end_date_query_param, parse_dates, \
+    get_jobs_published_by_search_terms_per_hour
 
 
 class JobsPublishedBySearchTermsPerHourAPIView(APIView):
@@ -30,8 +30,10 @@ class JobsPublishedBySearchTermsPerHourAPIView(APIView):
 
 class JobsPublishedBySearchTermsPerHourCSVAPIView(APIView):
     @swagger_auto_schema(
-        start_date_query_param,
-        end_date_query_param,
+        manual_parameters=[
+            start_date_query_param,
+            end_date_query_param,
+        ],
         responses={200: 'CSV file with job counts by hour'}
     )
     def get(self, request, *args, **kwargs):
