@@ -35,7 +35,11 @@ class Command(BaseCommand):
             for _job in UpworkJobFeedReader(url, 1, 1).fetch_jobs():
                 job, created = Job.objects.get_or_create(
                     job_id=_job.job_id,
-                    defaults={'url': _job.url, 'published_date': _job.published_date}
+                    defaults={
+                        'url': _job.url,
+                        'published_date': _job.published_date,
+                        'description': _job.description
+                    }
                 )
 
                 JobSearchTerm.objects.get_or_create(job=job, search_term=search_term)
