@@ -11,6 +11,10 @@ class Job(models.Model):
     )
     url = models.URLField(_('url'), max_length=4000)
     published_date = models.DateTimeField(_('published date'))
+    description = models.TextField(
+        _('description'),
+        default=''
+    )
     skills = models.ManyToManyField(
         'skills.Skill',
         through='JobSkill',
