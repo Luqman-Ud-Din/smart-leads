@@ -9,7 +9,7 @@ class Job(models.Model):
         max_length=4000,
         unique=True
     )
-    url = models.URLField(_('url'), max_length=4000)
+    url = models.CharField(_('url'), max_length=4000)
     published_date = models.DateTimeField(_('published date'))
     description = models.TextField(
         _('description'),
