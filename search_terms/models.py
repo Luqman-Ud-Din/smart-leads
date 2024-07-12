@@ -1,3 +1,5 @@
+import urllib
+
 from django.db import models
 from django.utils import timezone
 from django.utils.text import slugify
@@ -13,6 +15,10 @@ class SearchTerm(models.Model):
 
     def __str__(self):
         return self.text
+
+    @property
+    def encoded_text(self):
+        return urllib.parse.quote(self.text)
 
     def save(self, *args, **kwargs):
         self.slug = slugify(self.text)

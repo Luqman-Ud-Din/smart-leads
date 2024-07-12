@@ -30,7 +30,7 @@ class Command(BaseCommand):
         logger.info('Starting to fetch job listings from Upwork RSS feed')
 
         for search_term in SearchTerm.objects.all():
-            url = settings.UPWORK_RSS_FEED_URL_T.format(page=1, search_term=search_term.text)
+            url = settings.UPWORK_RSS_FEED_URL_T.format(page=1, search_term=search_term.encoded_text)
 
             for _job in UpworkJobFeedReader(url, 1, 1).fetch_jobs():
                 job, created = Job.objects.get_or_create(
