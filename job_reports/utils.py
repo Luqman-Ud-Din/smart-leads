@@ -1,10 +1,9 @@
 from datetime import datetime
 from datetime import timedelta
 
-import pytz
 from django.conf import settings
-from django.db.models import F
-from django.utils import timezone
+from django.db.models import F, Count
+from django.db.models.functions import TruncHour
 from drf_yasg import openapi
 from rest_framework import status
 from rest_framework.response import Response
@@ -66,30 +65,43 @@ def get_jobs_published_by_search_terms_per_hour(start_date, end_date):
 
 
 def get_jobs_published_by_skills_per_hour(start_date, end_date):
-    data = []
+    all_skills = Skill.objects.order_by('name').values_list('name', flat=True)
 
-    for hour in range(24):
-        hourly_data = {'hour': hour, 'job_counts': []}
+    annotated_jobs = JobSkill.objects.annotate(
+        local_published_date=ConvertTimeZone(
+            F('job__published_date'),
+            settings.REPORTS_CONFIGURATIONS['DB_FROM_TZ'],
+            settings.REPORTS_CONFIGURATIONS['DB_TO_TZ']
+        )
+    ).filter(
+        local_published_date__date__range=(start_date, end_date)
+    ).annotate(
+        hour=TruncHour('local_published_date')
+    ).values(
+        'hour', 'skill__name'
+    ).annotate(
+        jobs_count=Count('id')
+    ).order_by('hour', 'skill__name')
 
-        for skill in Skill.objects.all():
-            jobs_count = JobSkill.objects.annotate(
-                local_published_date=ConvertTimeZone(
-                    F('job__published_date'),
-                    settings.REPORTS_CONFIGURATIONS['DB_FROM_TZ'],
-                    settings.REPORTS_CONFIGURATIONS['DB_TO_TZ']
-                )
-            ).filter(
-                skill=skill,
-                local_published_date__date__range=(start_date, end_date),
-                local_published_date__hour=hour
-            ).count()
+    data = [
+        {
+            'hour': hour,
+            'job_counts': [
+                {'skill': skill, 'jobs_count': 0}
+                for skill in all_skills
+            ]
+        } for hour in range(24)
+    ]
 
-            hourly_data['job_counts'].append({
-                'skill': skill.name,
-                'jobs_count': jobs_count
-            })
+    for entry in annotated_jobs:
+        hour = entry['hour'].hour
+        skill_name = entry['skill__name']
+        jobs_count = entry['jobs_count']
 
-        data.append(hourly_data)
+        for job_count in data[hour]['job_counts']:
+            if job_count['skill'] == skill_name:
+                job_count['jobs_count'] = jobs_count
+                break
 
     return data
 
