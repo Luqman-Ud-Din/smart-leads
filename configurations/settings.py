@@ -154,3 +154,9 @@ UPWORK_RSS_FEED_URL_T = (
 CRONJOBS = [
     ('*/5 * * * *', 'django.core.management.call_command', ['fetch_upwork_jobs'])
 ]
+
+REPORTS_CONFIGURATIONS = {
+    'DB_FROM_TZ': 'UTC',
+    'DB_TO_TZ': 'Pakistan Standard Time',
+    'TO_TZ': 'Asia/Karachi'
+}

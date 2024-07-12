@@ -1,15 +1,21 @@
-from datetime import datetime, timedelta
+from datetime import datetime
+from datetime import timedelta
 
+import pytz
+from django.conf import settings
+from django.db.models import F
+from django.utils import timezone
 from drf_yasg import openapi
 from rest_framework import status
 from rest_framework.response import Response
 
 from jobs.models import JobSearchTerm, JobSkill, Job
 from search_terms.models import SearchTerm
+from services.db.functions import ConvertTimeZone
 from skills.models import Skill
 
 
-def parse_dates(request):
+def parse_dates(request, tz_info=None):
     start_date_str = request.query_params.get('start_date')
     end_date_str = request.query_params.get('end_date')
 
@@ -22,6 +28,10 @@ def parse_dates(request):
             end_date = datetime.strptime(end_date_str, '%Y-%m-%d')
         else:
             end_date = datetime.now().date()
+
+        if tz_info:
+            start_date = timezone.make_aware(start_date, pytz.timezone(tz_info))
+            end_date = timezone.make_aware(end_date, pytz.timezone(tz_info))
     except ValueError:
         return None, None, Response({'error': 'Invalid date format. Use YYYY-MM-DD.'},
                                     status=status.HTTP_400_BAD_REQUEST)
@@ -36,10 +46,16 @@ def get_jobs_published_by_search_terms_per_hour(start_date, end_date):
         hourly_data = {'hour': hour, 'job_counts': []}
 
         for search_term in SearchTerm.objects.all():
-            jobs_count = JobSearchTerm.objects.filter(
+            jobs_count = JobSearchTerm.objects.annotate(
+                local_published_date=ConvertTimeZone(
+                    F('job__published_date'),
+                    settings.REPORTS_CONFIGURATIONS['DB_FROM_TZ'],
+                    settings.REPORTS_CONFIGURATIONS['DB_TO_TZ']
+                )
+            ).filter(
                 search_term=search_term,
-                job__published_date__date__range=(start_date, end_date),
-                job__published_date__hour=hour
+                local_published_date__date__range=(start_date, end_date),
+                local_published_date__hour=hour
             ).count()
 
             hourly_data['job_counts'].append({
@@ -59,10 +75,16 @@ def get_jobs_published_by_skills_per_hour(start_date, end_date):
         hourly_data = {'hour': hour, 'job_counts': []}
 
         for skill in Skill.objects.all():
-            jobs_count = JobSkill.objects.filter(
+            jobs_count = JobSkill.objects.annotate(
+                local_published_date=ConvertTimeZone(
+                    F('job__published_date'),
+                    settings.REPORTS_CONFIGURATIONS['DB_FROM_TZ'],
+                    settings.REPORTS_CONFIGURATIONS['DB_TO_TZ']
+                )
+            ).filter(
                 skill=skill,
-                job__published_date__date__range=(start_date, end_date),
-                job__published_date__hour=hour
+                local_published_date__date__range=(start_date, end_date),
+                local_published_date__hour=hour
             ).count()
 
             hourly_data['job_counts'].append({
@@ -82,9 +104,15 @@ def get_jobs_published_per_hour(start_date, end_date):
     while current_date <= end_date:
         daily_data = {'date': current_date.strftime('%Y-%m-%d'), 'job_counts': []}
         for hour in range(24):
-            jobs_count = Job.objects.filter(
-                published_date__date=current_date,
-                published_date__hour=hour
+            jobs_count = Job.objects.annotate(
+                local_published_date=ConvertTimeZone(
+                    F('published_date'),
+                    settings.REPORTS_CONFIGURATIONS['DB_FROM_TZ'],
+                    settings.REPORTS_CONFIGURATIONS['DB_TO_TZ']
+                )
+            ).filter(
+                local_published_date__date=current_date,
+                local_published_date__hour=hour
             ).count()
             daily_data['job_counts'].append(jobs_count)
         data.append(daily_data)
