@@ -1,6 +1,5 @@
 import csv
 
-from django.conf import settings
 from django.http import HttpResponse
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework.response import Response
@@ -20,7 +19,7 @@ class JobsPublishedBySearchTermsPerHourAPIView(APIView):
         responses={200: HourlyJobCountSerializer(many=True)}
     )
     def get(self, request, *args, **kwargs):
-        start_date, end_date, error_response = parse_dates(request, settings.REPORTS_CONFIGURATIONS['TO_TZ'])
+        start_date, end_date, error_response = parse_dates(request)
         if error_response:
             return error_response
 
@@ -38,7 +37,7 @@ class JobsPublishedBySearchTermsPerHourCSVAPIView(APIView):
         responses={200: 'CSV file with job counts by hour'}
     )
     def get(self, request, *args, **kwargs):
-        start_date, end_date, error_response = parse_dates(request, settings.REPORTS_CONFIGURATIONS['TO_TZ'])
+        start_date, end_date, error_response = parse_dates(request)
         if error_response:
             return error_response
 

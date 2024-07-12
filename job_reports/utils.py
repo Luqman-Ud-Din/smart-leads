@@ -15,7 +15,7 @@ from services.db.functions import ConvertTimeZone
 from skills.models import Skill
 
 
-def parse_dates(request, tz_info=None):
+def parse_dates(request):
     start_date_str = request.query_params.get('start_date')
     end_date_str = request.query_params.get('end_date')
 
@@ -29,9 +29,6 @@ def parse_dates(request, tz_info=None):
         else:
             end_date = datetime.now().date()
 
-        if tz_info:
-            start_date = timezone.make_aware(start_date, pytz.timezone(tz_info))
-            end_date = timezone.make_aware(end_date, pytz.timezone(tz_info))
     except ValueError:
         return None, None, Response({'error': 'Invalid date format. Use YYYY-MM-DD.'},
                                     status=status.HTTP_400_BAD_REQUEST)
