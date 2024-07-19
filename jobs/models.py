@@ -4,6 +4,18 @@ from django.utils.translation import gettext_lazy as _
 
 
 class Job(models.Model):
+    FIXED = 'fixed'
+    HOURLY = 'hourly'
+    HOURLY_RANGE = 'hourly_range'
+    NOT_SPECIFIED = 'not_specified'
+
+    BUDGET_TYPE_CHOICES = [
+        (FIXED, 'Fixed'),
+        (HOURLY, 'Hourly'),
+        (HOURLY_RANGE, 'Hourly Range'),
+        (NOT_SPECIFIED, 'Not Specified'),
+    ]
+
     job_id = models.CharField(
         _('job id'),
         max_length=4000,
@@ -15,6 +27,29 @@ class Job(models.Model):
         _('description'),
         default=''
     )
+
+    budget_type = models.CharField(
+        _('budget type'),
+        max_length=50,
+        choices=BUDGET_TYPE_CHOICES,
+        default=NOT_SPECIFIED
+    )
+    budget_amount = models.FloatField(
+        _('budget amount'),
+        blank=True,
+        null=True
+    )
+    budget_min_rate = models.FloatField(
+        _('budget min rate'),
+        blank=True,
+        null=True
+    )
+    budget_max_rate = models.FloatField(
+        _('budget max rate'),
+        blank=True,
+        null=True
+    )
+
     skills = models.ManyToManyField(
         'skills.Skill',
         through='JobSkill',
