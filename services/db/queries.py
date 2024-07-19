@@ -31,3 +31,13 @@ def construct_date_query(start_date, end_date, date_field):
         queries.append((f"{date_field}__lte", end_date))
 
     return Q.create(queries, connector=Q.AND) if queries else Q()
+
+
+def construct_numeric_range_query(min_value, max_value, field_name):
+    queries = []
+    if min_value:
+        queries.append((f"{field_name}__gte", float(min_value)))
+    if max_value:
+        queries.append((f"{field_name}__lte", float(max_value)))
+
+    return Q.create(queries, connector=Q.AND) if queries else Q()
