@@ -2,12 +2,14 @@ import hashlib
 import re
 from datetime import datetime
 
+from services.budget_parsers.budget_parser import BudgetParser
 from services.job_container import JobContainer
 
 
 class UpworkJobParser:
     def __init__(self, entry):
         self.entry = entry
+        self.budget_parser = BudgetParser()
 
     def parse(self) -> JobContainer:
         published_date = self.parse_published_date()
@@ -15,13 +17,15 @@ class UpworkJobParser:
         url = self.parse_url()
         job_id = self.parse_job_id()
         description = self.parse_description()
+        budget_info = self.budget_parser.parse_budget(self.entry.summary)
 
         return JobContainer(
             url=url,
             skills=skills,
             published_date=published_date,
             job_id=job_id,
-            description=description
+            description=description,
+            budget_info=budget_info,
         )
 
     def parse_published_date(self):
