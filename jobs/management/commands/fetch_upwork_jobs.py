@@ -38,7 +38,11 @@ class Command(BaseCommand):
                     defaults={
                         'url': _job.url,
                         'published_date': _job.published_date,
-                        'description': _job.description
+                        'description': _job.description,
+                        'budget_type': _job.budget_info.type if _job.budget_info else Job.NOT_SPECIFIED,
+                        'budget_amount': _job.budget_info.mean_amount if _job.budget_info else None,
+                        'budget_min_rate': _job.budget_info.min_rate if _job.budget_info else None,
+                        'budget_max_rate': _job.budget_info.max_rate if _job.budget_info else None,
                     }
                 )
 
