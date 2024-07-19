@@ -84,6 +84,14 @@ class SkillListFilter(admin.SimpleListFilter):
             .order_by('-job_count')[:50]
         )
 
+        if not filters:
+            top_skills = (
+                Job.objects.annotate(skill_id=F('job_skills__skill_id'))
+                .values('job_skills__skill', 'job_skills__skill__name')
+                .annotate(job_count=Count('job_skills'))
+                .order_by('-job_count')[:50]
+            )
+
         lookups = [
             (skill['job_skills__skill'], f"{skill['job_skills__skill__name']} ({skill['job_count']})")
             for skill in top_skills
@@ -91,8 +99,8 @@ class SkillListFilter(admin.SimpleListFilter):
 
         # Include the selected skill if it is not in the top 50
         if selected_skill_id and not any(skill_id == selected_skill_id for skill_id, _ in lookups):
+            selected_skill = Skill.objects.get(id=selected_skill_id)
             try:
-                selected_skill = Skill.objects.get(id=selected_skill_id)
                 selected_skill_count = Job.objects.filter(
                     combined_query
                 ).values(
@@ -102,8 +110,8 @@ class SkillListFilter(admin.SimpleListFilter):
                 ).get(id=selected_skill_id)
 
                 lookups.append((selected_skill.id, f"{selected_skill.name} ({selected_skill_count.job_count})"))
-            except Skill.DoesNotExist:
-                pass
+            except Job.DoesNotExist:
+                lookups.append((selected_skill.id, f"{selected_skill.name} (0)"))
 
         return lookups
 
