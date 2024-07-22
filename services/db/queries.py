@@ -41,3 +41,7 @@ def construct_numeric_range_query(min_value, max_value, field_name):
         queries.append((f"{field_name}__lte", float(max_value)))
 
     return Q.create(queries, connector=Q.AND) if queries else Q()
+
+
+def filter_empty_q_objects(q_objects):
+    return [q for q in q_objects if q.children]

@@ -3,7 +3,10 @@ from django.contrib.admin import DateFieldListFilter
 from django.db.models import Q, Count, OuterRef, Subquery, F
 from rangefilter.filters import NumericRangeFilter, DateRangeFilter
 
-from services.db.queries import construct_search_query, construct_date_query, construct_numeric_range_query
+from services.db.queries import (
+    construct_search_query, construct_date_query,
+    construct_numeric_range_query, filter_empty_q_objects
+)
 from skills.models import Skill
 from .models import Job, JobSkill, JobSearchTerm
 
@@ -13,8 +16,8 @@ class SkillListFilter(admin.SimpleListFilter):
     parameter_name = 'skill'
 
     def lookups(self, request, model_admin):
-        start_date = request.GET.get('published_date__gte')
-        end_date = request.GET.get('published_date__lte')
+        start_date = request.GET.get('published_date__gte') or request.GET.get('published_date__range__gte')
+        end_date = request.GET.get('published_date__lt') or request.GET.get('published_date__range__lte')
         search_query = request.GET.get('q')
         budget_amount_min = request.GET.get('budget_amount__range__gte')
         budget_amount_max = request.GET.get('budget_amount__range__lte')
@@ -70,26 +73,27 @@ class SkillListFilter(admin.SimpleListFilter):
         if selected_skill_id:
             filters.append(Q(job_skills__skill_id=selected_skill_id))
 
+        filters = filter_empty_q_objects(filters)
+
         combined_query = Q.create(filters, connector=Q.AND)
 
-        skill_subquery = Skill.objects.filter(id=OuterRef('job_skills__skill_id'))
-
-        # Get the top 50 skills based on job count within the filtered job skills
-        top_skills = (
-            Job.objects.filter(combined_query)
-            .annotate(skill_id=F('job_skills__skill_id'))
-            .filter(job_skills__skill_id=Subquery(skill_subquery.values('id')))
-            .values('job_skills__skill', 'job_skills__skill__name')
-            .annotate(job_count=Count('job_skills__skill'))
-            .order_by('-job_count')[:50]
-        )
-
-        if not filters:
+        top_skills_limit = 50
+        if combined_query.children:
+            skill_subquery = Skill.objects.filter(id=OuterRef('job_skills__skill_id'))
+            top_skills = (
+                Job.objects.filter(combined_query)
+                .annotate(skill_id=F('job_skills__skill_id'))
+                .filter(job_skills__skill_id=Subquery(skill_subquery.values('id')))
+                .values('job_skills__skill', 'job_skills__skill__name')
+                .annotate(job_count=Count('job_skills__skill'))
+                .order_by('-job_count')[:top_skills_limit]
+            )
+        else:
             top_skills = (
                 Job.objects.annotate(skill_id=F('job_skills__skill_id'))
                 .values('job_skills__skill', 'job_skills__skill__name')
                 .annotate(job_count=Count('job_skills'))
-                .order_by('-job_count')[:50]
+                .order_by('-job_count')[:top_skills_limit]
             )
 
         lookups = [
