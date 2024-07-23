@@ -77,24 +77,28 @@ class SkillListFilter(admin.SimpleListFilter):
 
         combined_query = Q.create(filters, connector=Q.AND)
 
-        top_skills_limit = 50
+        queryset = Job.objects
         if combined_query.children:
+            queryset = queryset.filter(combined_query)
+
+        if selected_skill_id:
             skill_subquery = Skill.objects.filter(id=OuterRef('job_skills__skill_id'))
-            top_skills = (
-                Job.objects.filter(combined_query)
+            queryset = (
+                queryset
                 .annotate(skill_id=F('job_skills__skill_id'))
                 .filter(job_skills__skill_id=Subquery(skill_subquery.values('id')))
                 .values('job_skills__skill', 'job_skills__skill__name')
                 .annotate(job_count=Count('job_skills__skill'))
-                .order_by('-job_count')[:top_skills_limit]
             )
         else:
-            top_skills = (
-                Job.objects.annotate(skill_id=F('job_skills__skill_id'))
+            queryset = (
+                queryset
+                .annotate(skill_id=F('job_skills__skill_id'))
                 .values('job_skills__skill', 'job_skills__skill__name')
                 .annotate(job_count=Count('job_skills'))
-                .order_by('-job_count')[:top_skills_limit]
             )
+
+        top_skills = queryset.order_by('-job_count')[:50]
 
         lookups = [
             (skill['job_skills__skill'], f"{skill['job_skills__skill__name']} ({skill['job_count']})")
